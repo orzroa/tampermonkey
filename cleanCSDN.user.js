@@ -11,6 +11,6 @@
 (function() {
     'use strict';
     document.getElementsByClassName("container clearfix").mainBox.children[0].style.display='none'
-    document.getElementsByClassName("container clearfix").mainBox.children[1].style.width="1600px"
+    document.getElementsByClassName("container clearfix").mainBox.children[1].style.width="1750px"
     document.getElementsByClassName("container clearfix").mainBox.children[2].style.display='none'
 })();
