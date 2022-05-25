@@ -74,19 +74,20 @@
     return new Promise(resolve => {
       //obs page
       let page = setInterval(() => {
-        if (document.getElementsByClassName("cell-editor-stage") != undefined && document.getElementsByClassName("cell-editor-stage")[0] != undefined) {
+        var cells = document.getElementsByClassName("cell-editor-stage");
+        if (cells != undefined && cells[0] != undefined) {
           clearInterval(page)
           console.info("[covid] line " + pos + " loaded");
           //到第一行
           for(var i = 0; i < 250; i++) {
-            document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 38}));
+            cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 38}));
           }
           //到指定行
           for(i = 1; i < pos; i++) {
-            document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 40}));
+            cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 40}));
           }
           //到第一列
-          document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36}));
+          cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36}));
           resolve()
         } else {
           return
