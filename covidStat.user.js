@@ -24,7 +24,7 @@
       setTimeout(() => {
         console.log(desc, time, 's')
         resolve(time)
-      }, Math.floor(time * 1000))
+      }, Math.floor(time))
     })
   }
 
@@ -38,31 +38,38 @@
         document.getElementsByClassName("dui-select-text-container")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 32}));
         document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
         document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
-        console.info("[covid] old status is [" + oldStatus + "], status changed");
+        console.info("[covid] old status is [" + oldStatus + "], changed");
       } else {
-        console.info("[covid] old status is [" + oldStatus + "], no changes needed");
+        console.info("[covid] old status is [" + oldStatus + "], no need");
       }
       resolve();
     })
   }
 
+  const idSet = new Set(['2678', '2717', '2908', '2978', '204614'])
+  let pos = 2
+
   /**
    * 检查行数据
    */
-  function matchNumber(number){
+  function matchNumber(){
     return new Promise(resolve => {
       var no = document.getElementsByClassName("formula-input")[0].innerText.trim()
-      if (no == number) {
+      if (idSet.has(no)) {
         //到L列
         for(var i = 0; i < 10; i++) {
           document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 39}));
         }
-        console.info("[covid] number is [" + no + "], matched");
+        console.info("[covid] " + pos + "->" + no + ", matched");
+        sleep(1)
+          .then( () => modify() )
+          //到首列
+          .then( () => document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36})))
+          .then( () => resolve() )
       } else {
-        console.info("[covid] number is [" + no + "], no changes allowed");
-        throw new Error("[covid] number is [" + no + "], no changes allowed");
+        console.info("[covi] " + pos + "->" + no + ", skip");
+        resolve();
       }
-      resolve();
     })
   }
 
@@ -70,24 +77,47 @@
    * 监测cell加载并定位
    * @returns {Promise<unknown>}
    */
-  function locate(pos) {
+  function nextLine() {
     return new Promise(resolve => {
       //obs page
       let page = setInterval(() => {
         var cells = document.getElementsByClassName("cell-editor-stage");
         if (cells != undefined && cells[0] != undefined) {
           clearInterval(page)
-          console.info("[covid] line " + pos + " loaded");
+          //到指定行
+          cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 40}));
+          sleep(1).then( () => {
+            matchNumber()
+            if (++pos <= 211) {
+              nextLine()
+            }
+            resolve()
+          })
+        } else {
+          return
+        }
+      }, 100)
+    })
+  }
+
+  /**
+   * 到A1单元格
+   * @returns {Promise<unknown>}
+   */
+  function gotoLeftTop() {
+    return new Promise(resolve => {
+      //obs page
+      let page = setInterval(() => {
+        var cells = document.getElementsByClassName("cell-editor-stage");
+        if (cells != undefined && cells[0] != undefined) {
+          clearInterval(page)
           //到第一行
           for(var i = 0; i < 250; i++) {
             cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 38}));
           }
-          //到指定行
-          for(i = 1; i < pos; i++) {
-            cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 40}));
-          }
           //到第一列
           cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36}));
+          console.info("[covid] cell A1 loaded");
           resolve()
         } else {
           return
@@ -123,11 +153,8 @@
 
 
   //休眠
-  sleep(1)
-    .then(() => matchDocument()).then(() => sleep(1))
-    .then(() => locate(10)).then(() => sleep(1)).then(() => matchNumber(2908)).then(() => sleep(1)).then(() => modify())
-    .then(() => locate(77)).then(() => sleep(1)).then(() => matchNumber(2978)).then(() => sleep(1)).then(() => modify())
-    .then(() => locate(111)).then(() => sleep(1)).then(() => matchNumber(204614)).then(() => sleep(1)).then(() => modify())
-    .then(() => locate(145)).then(() => sleep(1)).then(() => matchNumber(2678)).then(() => sleep(1)).then(() => modify())
-    .then(() => locate(54).then(() => sleep(1)).then(() => matchNumber(2717)).then(() => sleep(1)).then(() => modify()))
+  sleep(1000)
+    .then(() => matchDocument()).then(() => sleep(1000))
+    .then(() => gotoLeftTop()).then(() => sleep(1000))
+    .then(() => nextLine())
 })();
