@@ -125,9 +125,9 @@
   //休眠
   sleep(1)
     .then(() => matchDocument()).then(() => sleep(1))
-    .then(() => locate(86)).then(() => sleep(1)).then(() => matchNumber(2908)).then(() => sleep(1)).then(() => modify())
-    .then(() => locate(90)).then(() => sleep(1)).then(() => matchNumber(2978)).then(() => sleep(1)).then(() => modify())
-    .then(() => locate(124)).then(() => sleep(1)).then(() => matchNumber(204614)).then(() => sleep(1)).then(() => modify())
-    .then(() => locate(157)).then(() => sleep(1)).then(() => matchNumber(2678)).then(() => sleep(1)).then(() => modify())
-    .then(() => locate(187).then(() => sleep(1)).then(() => matchNumber(2717)).then(() => sleep(1)).then(() => modify()))
+    .then(() => locate(10)).then(() => sleep(1)).then(() => matchNumber(2908)).then(() => sleep(1)).then(() => modify())
+    .then(() => locate(77)).then(() => sleep(1)).then(() => matchNumber(2978)).then(() => sleep(1)).then(() => modify())
+    .then(() => locate(111)).then(() => sleep(1)).then(() => matchNumber(204614)).then(() => sleep(1)).then(() => modify())
+    .then(() => locate(145)).then(() => sleep(1)).then(() => matchNumber(2678)).then(() => sleep(1)).then(() => modify())
+    .then(() => locate(54).then(() => sleep(1)).then(() => matchNumber(2717)).then(() => sleep(1)).then(() => modify()))
 })();
