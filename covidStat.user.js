@@ -46,30 +46,34 @@
     })
   }
 
+  const maxLine = 220
   const idSet = new Set(['2678', '2717', '2908', '2978', '204614'])
-  let pos = 2
+  var pos = 2
+  var oldId = ''
 
   /**
    * 检查行数据
    */
   function matchNumber(){
     return new Promise(resolve => {
-      var no = document.getElementsByClassName("formula-input")[0].innerText.trim()
-      if (idSet.has(no)) {
-        //到L列
-        for(var i = 0; i < 10; i++) {
-          document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 39}));
+      var id = document.getElementsByClassName("formula-input")[0].innerText.trim()
+      if (id != oldId) {
+        if (idSet.has(id)) {
+          //到M列
+          for(var i = 0; i < 11; i++) {
+            document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 39}));
+          }
+          console.info("[covid] " + pos + "->" + id + ", matched");
+          sleep(0)
+            .then( () => modify())
+            //到首列
+            .then( () => document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36})))
+        } else {
+          console.info("[covid] " + pos + "->" + id + ", skip");
         }
-        console.info("[covid] " + pos + "->" + no + ", matched");
-        sleep(1)
-          .then( () => modify() )
-          //到首列
-          .then( () => document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36})))
-          .then( () => resolve() )
-      } else {
-        console.info("[covi] " + pos + "->" + no + ", skip");
-        resolve();
       }
+      oldId = id
+      resolve()
     })
   }
 
@@ -86,9 +90,9 @@
           clearInterval(page)
           //到指定行
           cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 40}));
-          sleep(1).then( () => {
+          sleep(0).then( () => {
             matchNumber()
-            if (++pos <= 211) {
+            if (++pos <= maxLine) {
               nextLine()
             }
             resolve()
@@ -112,7 +116,7 @@
         if (cells != undefined && cells[0] != undefined) {
           clearInterval(page)
           //到第一行
-          for(var i = 0; i < 250; i++) {
+          for(var i = 0; i < maxLine; i++) {
             cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 38}));
           }
           //到第一列
