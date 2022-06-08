@@ -33,23 +33,39 @@
    */
   function modify(){
     return new Promise(resolve => {
-      var oldStatus = document.getElementsByClassName("formula-input")[0].innerText.trim()
-      if (oldStatus == '') {
-        document.getElementsByClassName("dui-select-text-container")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 32}));
-        document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
-        document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
-        console.info("[covid] old status is [" + oldStatus + "], changed");
-      } else {
-        console.info("[covid] old status is [" + oldStatus + "], no need");
-      }
-      resolve();
+      sleep(1)
+        .then( () => {
+          var oldStatus = document.getElementsByClassName("formula-input")[0].innerText.trim()
+          if (oldStatus == '') {
+              document.getElementsByClassName("dui-select-text-container")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 32}));
+              document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
+              document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
+              console.info("[covid] old status is [" + oldStatus + "], changed");
+          } else {
+              console.info("[covid] old status is [" + oldStatus + "], no need");
+          }
+        })
+        .then( () =>sleep(1) )
+        .then( () => resolve())
     })
   }
 
   const maxLine = 220
   const idSet = new Set(['2678', '2717', '2908', '2978', '204614'])
-  var pos = 2
+  var rowNumber = 2
   var oldId = ''
+
+  /**
+   * 向右n列
+   */
+  function nextColumn(offset) {
+    return new Promise(resolve => {
+      for(var i = 0; i < offset; i++) {
+        document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 39}));
+      }
+      resolve();
+    })
+  }
 
   /**
    * 检查行数据
@@ -58,22 +74,29 @@
     return new Promise(resolve => {
       var id = document.getElementsByClassName("formula-input")[0].innerText.trim()
       if (id != oldId) {
+        oldId = id
         if (idSet.has(id)) {
-          //到M列
-          for(var i = 0; i < 11; i++) {
-            document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 39}));
-          }
-          console.info("[covid] " + pos + "->" + id + ", matched");
-          sleep(0)
+          console.info("[covid] " + rowNumber + "->" + id + ", matched");
+          sleep(1)
+            .then( () => nextColumn(10)) //到L列
+            .then( () => sleep(1))
             .then( () => modify())
+            .then( () => sleep(1))
+            .then( () => nextColumn(1)) //到M列
+            .then( () => sleep(1))
+            .then( () => modify())
+            .then( () => sleep(1))
             //到首列
             .then( () => document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36})))
+            .then( () => sleep(1))
+            .then( () => resolve())
         } else {
-          console.info("[covid] " + pos + "->" + id + ", skip");
+          console.info("[covid] " + rowNumber + "->" + id + ", skip");
+          resolve()
         }
+      } else {
+        resolve()
       }
-      oldId = id
-      resolve()
     })
   }
 
@@ -90,13 +113,16 @@
           clearInterval(page)
           //到指定行
           cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 40}));
-          sleep(0).then( () => {
-            matchNumber()
-            if (++pos <= maxLine) {
-              nextLine()
-            }
-            resolve()
-          })
+          sleep(1)
+            .then( () => matchNumber())
+            .then( () => sleep(1))
+            .then( () => {
+              if (++rowNumber <= maxLine) {
+                nextLine()
+              }
+            })
+            .then( () => sleep(1))
+            .then( () => resolve())
         } else {
           return
         }
