@@ -12,6 +12,16 @@
 (function() {
     'use strict';
 
+  const maxRow = 220
+  const maxCol = 15
+  const idSet = new Set(['2678', '2717', '2908', '2978', '204614'])
+  var oldId = ''
+  var allRowsScaned = false
+  var curRow
+  var curCol
+  var curCell
+  var inputCols = []
+
   /**
    * 休眠
    * @param time    休眠时间，单位秒
@@ -37,12 +47,12 @@
         .then( () => {
           var oldStatus = document.getElementsByClassName("formula-input")[0].innerText.trim()
           if (oldStatus == '') {
-              document.getElementsByClassName("dui-select-text-container")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 32}));
-              document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
-              document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
-              console.info("[covid] old status is [" + oldStatus + "], changed");
+            document.getElementsByClassName("dui-select-text-container")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 32}));
+            document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
+            document.getElementsByClassName("dui-menu-item dui-option select-cell-editor-option")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 13}));
+            console.info("[covid] old status is [" + oldStatus + "], changed");
           } else {
-              console.info("[covid] old status is [" + oldStatus + "], no need");
+            console.info("[covid] old status is [" + oldStatus + "], no need");
           }
         })
         .then( () =>sleep(1) )
@@ -50,52 +60,61 @@
     })
   }
 
-  const maxLine = 220
-  const idSet = new Set(['2678', '2717', '2908', '2978', '204614'])
-  var rowNumber = 2
-  var oldId = ''
-
-  /**
-   * 向右n列
-   */
-  function nextColumn(offset) {
-    return new Promise(resolve => {
-      for(var i = 0; i < offset; i++) {
-        document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 39}));
-      }
-      resolve();
-    })
-  }
-
   /**
    * 检查行数据
    */
-  function matchNumber(){
+  function handleRow(){
     return new Promise(resolve => {
       var id = document.getElementsByClassName("formula-input")[0].innerText.trim()
       if (id != oldId) {
         oldId = id
         if (idSet.has(id)) {
-          console.info("[covid] " + rowNumber + "->" + id + ", matched");
-          sleep(1)
-            .then( () => nextColumn(10)) //到L列
+          console.info("[covid] " + curRow + "->" + id + ", matched");
+          goto(curRow, inputCols[0])
             .then( () => sleep(1))
             .then( () => modify())
             .then( () => sleep(1))
-            .then( () => nextColumn(1)) //到M列
+            .then( () => goto(curRow, inputCols[1]))
             .then( () => sleep(1))
             .then( () => modify())
-            .then( () => sleep(1))
-            //到首列
-            .then( () => document.getElementsByClassName("cell-editor-stage")[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36})))
             .then( () => sleep(1))
             .then( () => resolve())
         } else {
-          console.info("[covid] " + rowNumber + "->" + id + ", skip");
+          console.info("[covid] " + curRow + "->" + id + ", skip");
           resolve()
         }
       } else {
+        allRowsScaned = true
         resolve()
+      }
+    })
+  }
+
+  /**
+   * 监测列名
+   * @returns {Promise<unknown>}
+   */
+  function scanTitles() {
+    return new Promise(resolve => {
+      if(curCol >= maxCol || inputCols.length >= 2) {
+        resolve()
+      } else {
+        goto(1, curCol + 1)
+          .then( () => sleep(1))
+          .then( () => {
+            var text = document.getElementsByClassName("formula-input")[0].innerText.trim()
+            if (text.endsWith("（总部同事填写）")) {
+              inputCols.push(curCol)
+              console.info("[covid] title match: " + text)
+            } else if (text.endsWith("身体情况报备")) {
+              inputCols.push(curCol)
+              console.info("[covid] title match: " + text)
+            }
+          })
+          .then( () => sleep(1))
+          .then( () => scanTitles())
+          .then( () => sleep(100))
+          .then( () => resolve())
       }
     })
   }
@@ -104,29 +123,57 @@
    * 监测cell加载并定位
    * @returns {Promise<unknown>}
    */
-  function nextLine() {
+  function scanRows() {
     return new Promise(resolve => {
-      //obs page
-      let page = setInterval(() => {
-        var cells = document.getElementsByClassName("cell-editor-stage");
-        if (cells != undefined && cells[0] != undefined) {
-          clearInterval(page)
-          //到指定行
-          cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 40}));
-          sleep(1)
-            .then( () => matchNumber())
-            .then( () => sleep(1))
-            .then( () => {
-              if (++rowNumber <= maxLine) {
-                nextLine()
-              }
-            })
-            .then( () => sleep(1))
-            .then( () => resolve())
-        } else {
-          return
+      if (allRowsScaned || curRow >= maxRow) {
+        resolve()
+      } else {
+        goto(curRow + 1, 1)
+          .then( () => sleep(1))
+          .then( () => handleRow())
+          .then( () => sleep(1))
+          .then( () => scanRows())
+          .then( () => sleep(1))
+          .then( () => resolve())
+      }
+    })
+  }
+
+  /**
+   * 到指定单元格
+   */
+  function goto(row, col) {
+    return new Promise(resolve => {
+      if(curRow == undefined || curCol == undefined) {
+        //到第一行
+        for(var i = 0; i < maxRow; i++) {
+          curCell.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 38}));
         }
-      }, 100)
+        curRow = 1
+        //到第一列
+        curCell.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36}));
+        curCol = 1
+        console.info("[covid] cell A1 loaded");
+      }
+      if (row < curRow) {
+        for(; curRow > row; curRow--) {
+          curCell.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 38})); //up
+        }
+      } else {
+        for(; curRow < row; curRow++) {
+          curCell.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 40})); //down
+        }
+      }
+      if (col < curCol) {
+        for(; curCol > col; curCol--) {
+          curCell.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 37})); //left
+        }
+      } else {
+        for(; curCol < col; curCol++) {
+          curCell.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 39})); //right
+        }
+      }
+      resolve()
     })
   }
 
@@ -134,20 +181,14 @@
    * 到A1单元格
    * @returns {Promise<unknown>}
    */
-  function gotoLeftTop() {
+  function loadCell() {
     return new Promise(resolve => {
       //obs page
       let page = setInterval(() => {
         var cells = document.getElementsByClassName("cell-editor-stage");
         if (cells != undefined && cells[0] != undefined) {
           clearInterval(page)
-          //到第一行
-          for(var i = 0; i < maxLine; i++) {
-            cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 38}));
-          }
-          //到第一列
-          cells[0].dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable:true, keyCode: 36}));
-          console.info("[covid] cell A1 loaded");
+          curCell = cells[0]
           resolve()
         } else {
           return
@@ -160,7 +201,7 @@
    * 监测title加载
    * @returns {Promise<unknown>}
    */
-  function matchDocument() {
+  function loadDocument() {
     return new Promise(resolve => {
       //obs page
       let page = setInterval(() => {
@@ -181,10 +222,11 @@
     })
   }
 
-
   //休眠
   sleep(1000)
-    .then(() => matchDocument()).then(() => sleep(1000))
-    .then(() => gotoLeftTop()).then(() => sleep(1000))
-    .then(() => nextLine())
+    .then(() => loadDocument())
+    .then(() => loadCell()).then(() => sleep(1000))
+    .then(() => goto(1, 1)).then(() => sleep(1))
+    .then(() => scanTitles()).then(() => sleep(1))
+    .then(() => scanRows())
 })();
