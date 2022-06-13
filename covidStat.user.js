@@ -17,6 +17,7 @@
   const idSet = new Set(['2678', '2717', '2908', '2978', '204614'])
   var oldId = ''
   var allRowsScaned = false
+  var allColsScaned = false
   var curRow
   var curCol
   var curCell
@@ -96,7 +97,7 @@
    */
   function scanTitles() {
     return new Promise(resolve => {
-      if(curCol >= maxCol || inputCols.length >= 2) {
+      if(curCol >= maxCol || allColsScaned) {
         resolve()
       } else {
         goto(1, curCol + 1)
@@ -109,6 +110,7 @@
             } else if (text.endsWith("身体情况报备")) {
               inputCols.push(curCol)
               console.info("[covid] title match: " + text)
+              allColsScaned = true
             }
           })
           .then( () => sleep(1))
@@ -187,10 +189,12 @@
       let page = setInterval(() => {
         var cells = document.getElementsByClassName("cell-editor-stage");
         if (cells != undefined && cells[0] != undefined) {
+          console.info("[covid] cells loaded");
           clearInterval(page)
           curCell = cells[0]
           resolve()
         } else {
+          console.info("[covid] cells empty");
           return
         }
       }, 100)
